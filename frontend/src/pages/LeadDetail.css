@@ -1,0 +1,35 @@
+.lead-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.lead-info {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #666;
+  min-width: 120px;
+}
+
+.info-value {
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .lead-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
