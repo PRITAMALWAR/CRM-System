@@ -8,9 +8,12 @@ import PrivateRoute from './components/PrivateRoute'
 import Navbar from './components/Navbar'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Leads from './pages/Leads'
 import LeadDetail from './pages/LeadDetail'
+import Users from './pages/Users'
 import './App.css'
 
 function App() {
@@ -40,10 +43,12 @@ function App() {
 
   return (
     <div className="App">
-      {isAuthenticated && <Navbar />}
+      <Navbar />
       <Routes>
         <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
         <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/dashboard" />} />
+        <Route path="/forgot-password" element={!isAuthenticated ? <ForgotPassword /> : <Navigate to="/dashboard" />} />
+        <Route path="/reset-password/:token" element={!isAuthenticated ? <ResetPassword /> : <Navigate to="/dashboard" />} />
         <Route
           path="/dashboard"
           element={
@@ -65,6 +70,14 @@ function App() {
           element={
             <PrivateRoute>
               <LeadDetail />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <PrivateRoute>
+              <Users />
             </PrivateRoute>
           }
         />

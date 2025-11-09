@@ -14,8 +14,12 @@ const LeadDetail = () => {
   const dispatch = useDispatch()
   const { currentLead, loading } = useSelector((state) => state.leads)
   const { activities } = useSelector((state) => state.activities)
+  const { user } = useSelector((state) => state.auth)
   const [showEditForm, setShowEditForm] = useState(false)
   const [showActivityForm, setShowActivityForm] = useState(false)
+  
+  // Check if user can edit this lead
+  const canEdit = user?.role === 'Admin' || user?.role === 'Manager' || currentLead?.assignedToId === user?.id
 
   useEffect(() => {
     dispatch(fetchLead(id))
@@ -50,16 +54,20 @@ const LeadDetail = () => {
           ← Back to Leads
         </button>
         <div>
-          <button onClick={() => setShowEditForm(!showEditForm)} className="btn btn-primary">
-            {showEditForm ? 'Cancel' : 'Edit Lead'}
-          </button>
-          <button
-            onClick={() => setShowActivityForm(!showActivityForm)}
-            className="btn btn-success"
-            style={{ marginLeft: '10px' }}
-          >
-            + Add Activity
-          </button>
+          {canEdit && (
+            <button onClick={() => setShowEditForm(!showEditForm)} className="btn btn-primary">
+              {showEditForm ? 'Cancel' : 'Edit Lead'}
+            </button>
+          )}
+          {canEdit && (
+            <button
+              onClick={() => setShowActivityForm(!showActivityForm)}
+              className="btn btn-success"
+              style={{ marginLeft: '10px' }}
+            >
+              + Add Activity
+            </button>
+          )}
         </div>
       </div>
 

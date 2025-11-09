@@ -4,6 +4,7 @@ import leadReducer from './slices/leadSlice'
 import activityReducer from './slices/activitySlice'
 import dashboardReducer from './slices/dashboardSlice'
 import notificationReducer from './slices/notificationSlice'
+import userReducer from './slices/userSlice'
 
 export const store = configureStore({
   reducer: {
@@ -11,7 +12,8 @@ export const store = configureStore({
     leads: leadReducer,
     activities: activityReducer,
     dashboard: dashboardReducer,
-    notifications: notificationReducer
+    notifications: notificationReducer,
+    users: userReducer
   }
 })
 

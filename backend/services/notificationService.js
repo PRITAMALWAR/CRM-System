@@ -41,16 +41,36 @@ const emitNotification = (io, notification) => {
 const sendEmailNotification = async (notification) => {
   try {
     // Only send emails for important notifications
-    const importantTypes = ['Lead Assigned', 'Status Changed'];
+    const importantTypes = ['Lead Assigned', 'Status Changed', 'New Activity'];
     
     if (importantTypes.includes(notification.type)) {
-      // Get user email from notification (would need to include User in query)
-      // For now, we'll skip the actual email sending but structure is ready
-      // await sendEmail({
-      //   to: user.email,
-      //   subject: notification.title,
-      //   text: notification.message
-      // });
+      // Fetch user to get email
+      const { User } = require('../models');
+      const user = await User.findByPk(notification.userId, {
+        attributes: ['email', 'name']
+      });
+
+      if (user && user.email) {
+        const emailSent = await sendEmail({
+          to: user.email,
+          subject: notification.title,
+          text: `Hi ${user.name},\n\n${notification.message}\n\nBest regards,\nCRM System`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">${notification.title}</h2>
+              <p>Hi ${user.name},</p>
+              <p>${notification.message}</p>
+              <p style="margin-top: 30px;">Best regards,<br><strong>CRM System</strong></p>
+            </div>
+          `
+        });
+        
+        if (!emailSent) {
+          console.warn(`Failed to send email notification to ${user.email} for notification ${notification.id}`);
+        }
+      } else {
+        console.warn(`User ${notification.userId} not found or has no email address`);
+      }
     }
   } catch (error) {
     console.error('Send email notification error:', error);

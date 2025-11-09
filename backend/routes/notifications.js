@@ -32,6 +32,24 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   PUT /api/notifications/read-all
+// @desc    Mark all notifications as read
+// @access  Private
+// NOTE: This must come before /:id routes to avoid route conflicts
+router.put('/read-all', async (req, res) => {
+  try {
+    await Notification.update(
+      { isRead: true },
+      { where: { userId: req.user.id, isRead: false } }
+    );
+
+    res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Mark all notifications read error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   PUT /api/notifications/:id/read
 // @desc    Mark notification as read
 // @access  Private
@@ -56,20 +74,41 @@ router.put('/:id/read', async (req, res) => {
   }
 });
 
-// @route   PUT /api/notifications/read-all
-// @desc    Mark all notifications as read
+// @route   DELETE /api/notifications/:id
+// @desc    Delete a notification
 // @access  Private
-router.put('/read-all', async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    await Notification.update(
-      { isRead: true },
-      { where: { userId: req.user.id, isRead: false } }
-    );
+    const { id } = req.params;
+    
+    console.log('Delete notification request:', { id, userId: req.user?.id });
+    
+    if (!id) {
+      return res.status(400).json({ message: 'Notification ID is required' });
+    }
 
-    res.json({ message: 'All notifications marked as read' });
+    const notification = await Notification.findByPk(id);
+
+    if (!notification) {
+      console.log('Notification not found:', id);
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+
+    if (notification.userId !== req.user.id) {
+      console.log('Access denied:', { notificationUserId: notification.userId, reqUserId: req.user.id });
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    await notification.destroy();
+    console.log('Notification deleted successfully:', id);
+
+    res.json({ message: 'Notification deleted successfully' });
   } catch (error) {
-    console.error('Mark all notifications read error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Delete notification error:', error);
+    res.status(500).json({ 
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

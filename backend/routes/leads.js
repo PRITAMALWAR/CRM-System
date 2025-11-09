@@ -33,10 +33,11 @@ router.get('/', [
       ];
     }
 
-    // Role-based access: Sales Executives can only see their assigned leads
+    // Role-based access: Admin and Manager can see all leads, Sales Executives can only see their assigned leads
     if (req.user.role === 'Sales Executive') {
       where.assignedToId = req.user.id;
     }
+    // Admin and Manager can see all leads (no filter needed)
 
     const leads = await Lead.findAll({
       where,
@@ -76,9 +77,9 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Lead not found' });
     }
 
-    // Role-based access check
+    // Role-based access: Admin and Manager can view any lead, Sales Executive can only view their assigned leads
     if (req.user.role === 'Sales Executive' && lead.assignedToId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+      return res.status(403).json({ message: 'You can only view leads assigned to you' });
     }
 
     res.json(lead);
@@ -164,9 +165,9 @@ router.put('/:id', [
       return res.status(404).json({ message: 'Lead not found' });
     }
 
-    // Role-based access check
+    // Role-based access: Admin and Manager can update any lead, Sales Executive can only update their assigned leads
     if (req.user.role === 'Sales Executive' && lead.assignedToId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+      return res.status(403).json({ message: 'You can only update leads assigned to you' });
     }
 
     const oldStatus = lead.status;
@@ -231,13 +232,20 @@ router.put('/:id', [
 });
 
 // @route   DELETE /api/leads/:id
-// @desc    Delete lead (Admin/Manager only)
+// @desc    Delete lead
 // @access  Private
-router.delete('/:id', authorize('Admin', 'Manager'), async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const lead = await Lead.findByPk(req.params.id);
     if (!lead) {
       return res.status(404).json({ message: 'Lead not found' });
+    }
+
+    // Admin can delete any lead, Manager can delete any lead, Sales Executive can only delete their assigned leads
+    if (req.user.role === 'Admin' || req.user.role === 'Manager') {
+      // Admin and Manager can delete any lead
+    } else if (req.user.role === 'Sales Executive' && lead.assignedToId !== req.user.id) {
+      return res.status(403).json({ message: 'You can only delete leads assigned to you' });
     }
 
     await lead.destroy();

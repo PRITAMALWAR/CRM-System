@@ -1,10 +1,11 @@
 import { format } from 'date-fns'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { deleteActivity, fetchActivities } from '../../store/slices/activitySlice'
 import './ActivityList.css'
 
 const ActivityList = ({ activities, leadId }) => {
   const dispatch = useDispatch()
+  const { user } = useSelector((state) => state.auth)
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this activity?')) {
@@ -46,12 +47,15 @@ const ActivityList = ({ activities, leadId }) => {
             )}
             <div className="activity-meta">
               <span className="activity-user">by {activity.user?.name}</span>
-              <button
-                onClick={() => handleDelete(activity.id)}
-                className="btn btn-sm btn-danger"
-              >
-                Delete
-              </button>
+              {/* Show delete button: Admin/Manager can delete any activity, Sales Executive can only delete their own activities */}
+              {(user?.role === 'Admin' || user?.role === 'Manager' || activity.userId === user?.id) && (
+                <button
+                  onClick={() => handleDelete(activity.id)}
+                  className="btn btn-sm btn-danger"
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         </div>

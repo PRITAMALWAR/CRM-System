@@ -5,11 +5,60 @@ const { authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
+// @route   POST /api/users
+// @desc    Create a new user (Admin only)
+// @access  Private
+router.post('/', authorize('Admin'), [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('role').optional().isIn(['Admin', 'Manager', 'Sales Executive']).withMessage('Invalid role')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, email, password, role } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // Create new user
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: role || 'Sales Executive'
+    });
+
+    res.status(201).json({
+      message: 'User created successfully',
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   GET /api/users
 // @desc    Get all users (Admin/Manager only)
 // @access  Private
-router.get('/', authorize('Admin', 'Manager'), async (req, res) => {
+router.get('/', async (req, res) => {
   try {
+    // Admin and Manager can see all users, Sales Executive can only see themselves
+    if (req.user.role !== 'Admin' && req.user.role !== 'Manager') {
+      const user = await User.findByPk(req.user.id, {
+        attributes: { exclude: ['password'] }
+      });
+      return res.json([user]);
+    }
+
     const users = await User.findAll({
       attributes: { exclude: ['password'] },
       order: [['createdAt', 'DESC']]
@@ -35,8 +84,16 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Users can only view their own profile unless they're Admin/Manager
-    if (req.user.role !== 'Admin' && req.user.role !== 'Manager' && req.user.id !== user.id) {
+    // Admin can view anyone, Manager can view anyone except Admin, Sales Executive can only view themselves
+    if (req.user.role === 'Admin') {
+      // Admin can view anyone
+    } else if (req.user.role === 'Manager') {
+      // Manager cannot view Admin users
+      if (user.role === 'Admin') {
+        return res.status(403).json({ message: 'Manager cannot view Admin users' });
+      }
+    } else if (req.user.id !== user.id) {
+      // Sales Executive can only view themselves
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -66,12 +123,21 @@ router.put('/:id', [
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Only Admin can change roles, users can update their own profile
+    // Only Admin can change roles
     if (req.body.role && req.user.role !== 'Admin') {
       return res.status(403).json({ message: 'Only Admin can change roles' });
     }
 
-    if (req.user.role !== 'Admin' && req.user.role !== 'Manager' && req.user.id !== user.id) {
+    // Admin can update anyone, Manager can update anyone except Admin, users can update their own profile
+    if (req.user.role === 'Admin') {
+      // Admin can update anyone
+    } else if (req.user.role === 'Manager') {
+      // Manager cannot update Admin users
+      if (user.role === 'Admin') {
+        return res.status(403).json({ message: 'Manager cannot update Admin users' });
+      }
+    } else if (req.user.id !== user.id) {
+      // Sales Executive can only update their own profile
       return res.status(403).json({ message: 'Access denied' });
     }
 

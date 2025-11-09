@@ -8,6 +8,7 @@ import './Leads.css'
 const Leads = () => {
   const dispatch = useDispatch()
   const { leads, loading } = useSelector((state) => state.leads)
+  const { user } = useSelector((state) => state.auth)
   const [showForm, setShowForm] = useState(false)
   const [filters, setFilters] = useState({
     status: '',
@@ -106,31 +107,34 @@ const Leads = () => {
             <tbody>
               {leads.map((lead) => (
                 <tr key={lead.id}>
-                  <td>
+                  <td data-label="Name">
                     <Link to={`/leads/${lead.id}`} className="lead-link">
                       {lead.firstName} {lead.lastName}
                     </Link>
                   </td>
-                  <td>{lead.email}</td>
-                  <td>{lead.company || '-'}</td>
-                  <td>
+                  <td data-label="Email">{lead.email}</td>
+                  <td data-label="Company">{lead.company || '-'}</td>
+                  <td data-label="Status">
                     <span className={`badge ${getStatusBadgeClass(lead.status)}`}>
                       {lead.status}
                     </span>
                   </td>
-                  <td>{lead.assignedTo?.name || '-'}</td>
-                  <td>${lead.estimatedValue || 0}</td>
-                  <td>
+                  <td data-label="Assigned To">{lead.assignedTo?.name || '-'}</td>
+                  <td data-label="Value">${lead.estimatedValue || 0}</td>
+                  <td data-label="Actions">
                     <Link to={`/leads/${lead.id}`} className="btn btn-sm btn-primary">
                       View
                     </Link>
-                    <button
-                      onClick={() => handleDelete(lead.id)}
-                      className="btn btn-sm btn-danger"
-                      style={{ marginLeft: '5px' }}
-                    >
-                      Delete
-                    </button>
+                    {/* Show delete button: Admin/Manager can delete any lead, Sales Executive can only delete their assigned leads */}
+                    {(user?.role === 'Admin' || user?.role === 'Manager' || lead.assignedToId === user?.id) && (
+                      <button
+                        onClick={() => handleDelete(lead.id)}
+                        className="btn btn-sm btn-danger"
+                        style={{ marginLeft: '5px' }}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

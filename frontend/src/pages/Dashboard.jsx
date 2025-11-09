@@ -28,7 +28,9 @@ const Dashboard = () => {
 
   return (
     <div className="container">
-      <h1>Dashboard</h1>
+      <div className="page-header">
+        <h1>Dashboard</h1>
+      </div>
       <StatsCards stats={stats} />
       <div className="dashboard-grid">
         <div className="dashboard-section">

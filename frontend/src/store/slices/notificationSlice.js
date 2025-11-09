@@ -46,6 +46,20 @@ export const markAllNotificationsRead = createAsyncThunk(
   }
 )
 
+export const deleteNotification = createAsyncThunk(
+  'notifications/deleteNotification',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axios.delete(`${API_URL}/notifications/${id}`, getAuthHeaders())
+      return id
+    } catch (error) {
+      console.error('Delete notification error:', error.response?.data || error.message)
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete notification'
+      return rejectWithValue(errorMessage)
+    }
+  }
+)
+
 const notificationSlice = createSlice({
   name: 'notifications',
   initialState: {
@@ -66,26 +80,66 @@ const notificationSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // Fetch notifications
+      .addCase(fetchNotifications.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
       .addCase(fetchNotifications.fulfilled, (state, action) => {
+        state.loading = false
         state.notifications = action.payload
         state.unreadCount = action.payload.filter(n => !n.isRead).length
       })
+      .addCase(fetchNotifications.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
       // Mark notification read
+      .addCase(markNotificationRead.pending, (state) => {
+        state.loading = true
+      })
       .addCase(markNotificationRead.fulfilled, (state, action) => {
+        state.loading = false
         const index = state.notifications.findIndex(n => n.id === action.payload.id)
         if (index !== -1) {
+          const wasUnread = !state.notifications[index].isRead
           state.notifications[index] = action.payload
-          if (!action.payload.isRead) {
-            state.unreadCount += 1
-          } else if (state.unreadCount > 0) {
+          if (wasUnread && action.payload.isRead && state.unreadCount > 0) {
             state.unreadCount -= 1
           }
         }
       })
+      .addCase(markNotificationRead.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
       // Mark all read
+      .addCase(markAllNotificationsRead.pending, (state) => {
+        state.loading = true
+      })
       .addCase(markAllNotificationsRead.fulfilled, (state) => {
+        state.loading = false
         state.notifications = state.notifications.map(n => ({ ...n, isRead: true }))
         state.unreadCount = 0
+      })
+      .addCase(markAllNotificationsRead.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Delete notification
+      .addCase(deleteNotification.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(deleteNotification.fulfilled, (state, action) => {
+        state.loading = false
+        const deletedNotification = state.notifications.find(n => n.id === action.payload)
+        if (deletedNotification && !deletedNotification.isRead && state.unreadCount > 0) {
+          state.unreadCount -= 1
+        }
+        state.notifications = state.notifications.filter(n => n.id !== action.payload)
+      })
+      .addCase(deleteNotification.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
       })
   }
 })

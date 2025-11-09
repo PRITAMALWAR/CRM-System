@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
       where.leadId = leadId;
     }
 
-    // Role-based access: Sales Executives can only see activities for their leads
+    // Role-based access: Admin and Manager can see all activities, Sales Executives can only see activities for their leads
     if (req.user.role === 'Sales Executive') {
       const userLeads = await Lead.findAll({
         where: { assignedToId: req.user.id },
@@ -25,6 +25,7 @@ router.get('/', async (req, res) => {
       });
       where.leadId = { [require('sequelize').Op.in]: userLeads.map(l => l.id) };
     }
+    // Admin and Manager can see all activities (no filter needed)
 
     const activities = await Activity.findAll({
       where,
@@ -64,9 +65,9 @@ router.post('/', [
       return res.status(404).json({ message: 'Lead not found' });
     }
 
-    // Role-based access check
+    // Role-based access: Admin and Manager can create activities for any lead, Sales Executive can only create for their assigned leads
     if (req.user.role === 'Sales Executive' && lead.assignedToId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+      return res.status(403).json({ message: 'You can only add activities to leads assigned to you' });
     }
 
     const activity = await Activity.create({
@@ -121,9 +122,11 @@ router.put('/:id', [
       return res.status(404).json({ message: 'Activity not found' });
     }
 
-    // Users can only update their own activities (unless Admin/Manager)
-    if (req.user.role !== 'Admin' && req.user.role !== 'Manager' && activity.userId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Admin and Manager can update any activity, Sales Executive can only update their own activities
+    if (req.user.role === 'Admin' || req.user.role === 'Manager') {
+      // Admin and Manager can update any activity
+    } else if (activity.userId !== req.user.id) {
+      return res.status(403).json({ message: 'You can only update your own activities' });
     }
 
     await activity.update(req.body);
@@ -152,9 +155,11 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Activity not found' });
     }
 
-    // Users can only delete their own activities (unless Admin/Manager)
-    if (req.user.role !== 'Admin' && req.user.role !== 'Manager' && activity.userId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Admin and Manager can delete any activity, Sales Executive can only delete their own activities
+    if (req.user.role === 'Admin' || req.user.role === 'Manager') {
+      // Admin and Manager can delete any activity
+    } else if (activity.userId !== req.user.id) {
+      return res.status(403).json({ message: 'You can only delete your own activities' });
     }
 
     await activity.destroy();
