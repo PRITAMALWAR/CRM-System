@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: crm-frontend
+    env: static
+    # If Root Directory is set to "frontend" in Render dashboard, use:
+    # buildCommand: npm run build
+    # staticPublishPath: ./dist
+    # If building from repository root, use:
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://crm-system-73ir.onrender.com/api
+      - key: VITE_SOCKET_URL
+        value: https://crm-system-73ir.onrender.com
+

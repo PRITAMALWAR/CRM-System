@@ -91,6 +91,13 @@
   flex-wrap: nowrap;
 }
 
+.navbar-user-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
 .navbar-user-name {
   font-weight: 500;
   font-size: 14px;
